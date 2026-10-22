@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#128c7e">
+  <title>My Shop | Order on WhatsApp</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #202b28;
+      background: #f4f7f6;
+    }
+
+    header {
+      background: #128c7e;
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    header h1 { margin: 0 0 8px; }
+    header p { margin: 0; }
+
+    main {
+      max-width: 900px;
+      margin: 22px auto;
+      padding: 0 15px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    input, button {
+      font: inherit;
+    }
+
+    input {
+      padding: 12px;
+      border: 1px solid #cbd5d1;
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    #search { flex: 1; width: 100%; }
+
+    .refresh {
+      border: 1px solid #128c7e;
+      background: white;
+      color: #128c7e;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px #0000000b;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .photo {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #e9efec;
+    }
+
+    .details {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .details h3 {
+      font-size: 16px;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .description {
+      font-size: 13px;
+      color: #66736d;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .price {
+      font-size: 19px;
+      font-weight: bold;
+      color: #128c7e;
+      margin-top: auto;
+    }
+
+    .quantity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .quantity label { font-size: 13px; }
+
+    .quantity input {
+      width: 76px;
+      padding: 9px;
+    }
+
+    .panel {
+      margin-top: 22px;
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+    }
+
+    .panel h2 { margin-top: 0; }
+
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .field input { width: 100%; }
+
+    #total {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 16px 0;
+    }
+
+    .order {
+      background: #25d366;
+      color: #103b22;
+      width: 100%;
+      padding: 15px;
+      border: 0;
+      border-radius: 9px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hint {
+      color: #66736d;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #status { line-height: 1.5; }
+
+    footer {
+      text-align: center;
+      color: #66736d;
+      padding: 24px 12px;
+      font-size: 13px;
+    }
+
+    @media (min-width: 650px) {
+      .products { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 360px) {
+      .toolbar { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1 id="shopName">My Shop</h1>
+    <p>Browse our products and order on WhatsApp</p>
+  </header>
+
+  <main>
+    <h2>Our Products</h2>
+    <p class="hint">Choose your products and quantities below.</p>
+
+    <div class="toolbar">
+      <input id="search" type="search"
+             placeholder="Search products..."
+             aria-label="Search products">
+      <button class="refresh" id="refresh">Refresh products</button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite">
+      Loading products...
+    </p>
+    <div id="products" class="products"></div>
+
+    <section class="panel">
+      <h2>Your order</h2>
+
+      <div class="field">
+        <label for="customerName">Your name *</label>
+        <input id="customerName" autocomplete="name"
+               placeholder="Enter your name">
+      </div>
+
+      <div id="orderSummary" class="hint">
+        No products selected yet.
+      </div>
+
+      <p id="total">Total: ₹0</p>
+
+      <button class="order" id="orderButton">
+        Order on WhatsApp
+      </button>
+
+      <p class="hint">
+        WhatsApp will open with your order prepared.
+        Please review it and press Send to place your order.
+        Delivery charges and final availability are confirmed by the shop.
+      </p>
+    </section>
+  </main>
+
+  <footer>Thank you for shopping with us!</footer>
+
+  <script>
+    // CHANGE THESE TWO SETTINGS
+    const PRODUCT_FEED_URL =
+      "https://script.google.com/macros/s/AKfycbxAMtd6KhHqC5mq0D-Q6ydNQKrzHVR9tB7VouPXWwoPrb8RSmoS-HbSWVJ0eWUWfkJw2A/exec";
+
+    const WHATSAPP_NUMBER = "918920199743";
+
+    const CURRENCY = "INR";
+    const SHOP_NAME = "My Shop";
+
+    let products = [];
+    let quantities = {};
+
+    document.getElementById("shopName").textContent = SHOP_NAME;
+    document.title = SHOP_NAME + " | Order on WhatsApp";
+
+    const money = amount => new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: CURRENCY,
+      maximumFractionDigits: 2
+    }).format(amount);
+
+    function loadProducts() {
+      const status = document.getElementById("status");
+
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(
+        PRODUCT_FEED_URL
+      )) {
+        status.textContent =
+          "Setup needed: add your deployed Apps Script URL in the code.";
+        return;
+      }
+
+      status.textContent = "Loading latest products...";
+      document.getElementById("products").replaceChildren();
+
+      const oldScript = document.getElementById("productFeedScript");
+      if (oldScript) oldScript.remove();
+
+      // JSONP lets the static website read the Apps Script response
+      // without needing a separate database or API server.
+      const script = document.createElement("script");
+      script.id = "productFeedScript";
+      script.src = PRODUCT_FEED_URL +
+        "?callback=receiveProducts&t=" + Date.now();
+
+      script.onerror = () => {
+        status.textContent =
+          "Could not load products. Check your Apps Script deployment and URL.";
+      };
+
+      document.body.appendChild(script);
+    }
+
+    // Apps Script calls this function with the latest product list.
+    window.receiveProducts = function(data) {
+      if (!Array.isArray(data)) {
+        document.getElementById("status").textContent =
+          "The product feed returned an invalid response.";
+        return;
+      }
+
+      // Keep quantities for products that are still available.
+      const oldQuantities = quantities;
+      products = data.filter(p =>
+        p && typeof p.id === "string" &&
+        typeof p.name === "string" &&
+        Number.isFinite(p.price) && p.price >= 0 &&
+        typeof p.image_url === "string" &&
+        /^https?:\/\//i.test(p.image_url)
+      );
+
+      quantities = {};
+      products.forEach(p => {
+        quantities[p.id] = oldQuantities[p.id] || 0;
+      });
+
+      renderProducts();
+      updateOrder();
+
+      document.getElementById("status").textContent =
+        products.length
+          ? products.length + " products available"
+          : "No products are available right now.";
+    };
+
+    function renderProducts() {
+      const container = document.getElementById("products");
+      const term = document.getElementById("search")
+        .value.trim().toLowerCase();
+
+      container.replaceChildren();
+
+      const visible = products.filter(p =>
+        (p.name + " " + p.description).toLowerCase().includes(term)
+      );
+
+      visible.forEach(product => {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const img = document.createElement("img");
+        img.className = "photo";
+        img.src = product.image_url;
+        img.alt = product.name;
+        img.loading = "lazy";
+        img.onerror = () => {
+          img.removeAttribute("src");
+          img.alt = "Product photo unavailable";
+        };
+
+        const details = document.createElement("div");
+        details.className = "details";
+
+        const name = document.createElement("h3");
+        name.textContent = product.name;
+
+        const description = document.createElement("p");
+        description.className = "description";
+        description.textContent = product.description || "";
+
+        const price = document.createElement("div");
+        price.className = "price";
+        price.textContent = money(product.price);
+
+        const quantityRow = document.createElement("div");
+        quantityRow.className = "quantity";
+
+        const label = document.createElement("label");
+        label.textContent = "Quantity";
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = "99";
+        input.step = "1";
+        input.value = quantities[product.id] || 0;
+        input.setAttribute("aria-label", product.name + " quantity");
+
+        input.addEventListener("change", () => {
+          let n = Number(input.value);
+          if (!Number.isFinite(n)) n = 0;
+          n = Math.max(0, Math.min(99, Math.floor(n)));
+          input.value = n;
+          quantities[product.id] = n;
+          updateOrder();
+        });
+
+        quantityRow.append(label, input);
+        details.append(name, description, price, quantityRow);
+        card.append(img, details);
+        container.append(card);
+      });
+
+      if (term && visible.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No matching products found.";
+        container.append(empty);
+      }
+    }
+
+    function selectedProducts() {
+      return products.filter(p => (quantities[p.id] || 0) > 0);
+    }
+
+    function updateOrder() {
+      const selected = selectedProducts();
+      const total = selected.reduce(
+        (sum, p) => sum + p.price * quantities[p.id], 0
+      );
+
+      const summary = document.getElementById("orderSummary");
+      summary.replaceChildren();
+
+      if (!selected.length) {
+        summary.textContent = "No products selected yet.";
+      } else {
+        selected.forEach(p => {
+          const line = document.createElement("p");
+          line.textContent =
+            p.name + " × " + quantities[p.id] + " — " +
+            money(p.price * quantities[p.id]);
+          summary.append(line);
+        });
+      }
+
+      document.getElementById("total").textContent =
+        "Total: " + money(total);
+    }
+
+    function sendOrder() {
+      const name = document.getElementById("customerName")
+        .value.trim();
+
+      if (!name) {
+        alert("Please enter your name.");
+        document.getElementById("customerName").focus();
+        return;
+      }
+
+      const selected = selectedProducts();
+
+      if (!selected.length) {
+        alert("Please select at least one product.");
+        return;
+      }
+
+      if (!/^[1-9]\d{7,14}$/.test(WHATSAPP_NUMBER)) {
+        alert("Please set your correct WhatsApp number in the code.");
+        return;
+      }
+
+      const total = selected.reduce(
+        (sum, p) => sum + p.price * quantities[p.id], 0
+      );
+
+      let message = "Hello " + SHOP_NAME + "!\n";
+      message += "I would like to place an order.\n";
+      message += "Customer: " + name + "\n\n";
+
+      selected.forEach(p => {
+        message += p.name + " × " + quantities[p.id] +
+          " = " + money(p.price * quantities[p.id]) + "\n";
+      });
+
+      message += "\nTotal: " + money(total);
+      message += "\nPlease confirm availability and delivery charges.";
+
+      const url = "https://wa.me/" + WHATSAPP_NUMBER +
+        "?text=" + encodeURIComponent(message);
+
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    document.getElementById("search").addEventListener(
+      "input", renderProducts
+    );
+
+    document.getElementById("refresh").addEventListener(
+      "click", loadProducts
+    );
+
+    document.getElementById("orderButton").addEventListener(
+      "click", sendOrder
+    );
+
+    loadProducts();
+  </script>
+</body>
+</html>
